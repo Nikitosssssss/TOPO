@@ -1,0 +1,234 @@
+#include "pch.h"
+#include <gtest/gtest.h>
+#include <string>
+#include <fstream>
+using namespace std;
+
+//////////////////////////////////////////////////////////////////////// FirstFunction
+// Функция для проверки, является ли номер билета "счастливым" 
+int isLuckyTicket(int number) {
+    std::string num_str = std::to_string(number);
+    while (num_str.length() < 6) {
+        num_str = "0" + num_str;
+    }
+    int sum_first = 0;
+    for (int i = 0; i < 3; ++i) {
+        sum_first += (num_str[i] - '0');
+    }
+    int sum_last = 0;
+    for (int i = 3; i < 6; ++i) {
+        sum_last += (num_str[i] - '0');
+    }
+    return (sum_first == sum_last) ? 1 : 0;
+}
+
+// Тесты
+TEST(isLuckyTicketTest, OrdinaryNumbers) { //проверка на разных 6-ти значных значениях
+    EXPECT_EQ(isLuckyTicket(123123), 1) << "Number 123123";
+    EXPECT_EQ(isLuckyTicket(111111), 1) << "Number 111111";
+    EXPECT_EQ(isLuckyTicket(123456), 0) << "Number 123456";
+    EXPECT_EQ(isLuckyTicket(123321), 1) << "Number 123321";
+}
+
+TEST(isLuckyTicketTest, ShortNumbers) { //проверка на числах короче 6 знаков
+    EXPECT_EQ(isLuckyTicket(123), 0) << "Number 123";
+    EXPECT_EQ(isLuckyTicket(1230), 0) << "Number 1230";
+    EXPECT_EQ(isLuckyTicket(1001), 1) << "Number 1001";
+}
+
+TEST(isLuckyTicketTest, EdgeCases) { //проверка граничных значений
+    EXPECT_EQ(isLuckyTicket(0), 1) << "Number 0";
+    EXPECT_EQ(isLuckyTicket(999999), 1) << "Number 999999";
+}
+
+
+
+//////////////////////////////////////////////////////////////////////// SecondFunction
+
+
+// Функция для считывания первых n строк из текстового файла
+void PrintFirstNLinesFromFile(const std::string& filename, int n) {
+    std::ifstream file(filename);
+
+    if (!file.is_open()) {
+        std::cerr << "Error: cannot open file!" << filename << std::endl;
+        return;
+    }
+    std::string line;
+    int lineCount = 0;
+    while (std::getline(file, line) && lineCount < n)
+    //while (std::getline(file, line) || lineCount < n) //ошибка в условии: вместо И сделаю ИЛИ
+    {
+        std::cout << line << std::endl;
+        lineCount++;
+    }
+    file.close();
+}
+
+
+// Вспомогательная функция для захвата вывода в консоль
+std::string captureOutput(const std::string& filename, int n) {
+    std::stringstream buffer;
+    std::streambuf* oldCout = std::cout.rdbuf(buffer.rdbuf()); // направление вывода в буфер
+
+    PrintFirstNLinesFromFile(filename, n); // Вызываем тестируемую функцию
+
+    std::cout.rdbuf(oldCout); // Восстанавливаем стандартный вывод
+    return buffer.str(); // Возвращаем захваченный вывод
+}
+
+// Тесты
+TEST(PrintFirstNLinesFromFileTest, NormalFile) {
+    std::ofstream outfile("testfile.txt"); //чтобы не вбивать руками, создается автоматически
+
+    outfile << "Line 1\nLine 2\nLine 3\nLine 4\nLine 5\n";
+    outfile.close();
+
+    std::string output = captureOutput("testfile.txt", 3);
+    std::string expectedOutput = "Line 1\nLine 2\nLine 3\n";
+    EXPECT_EQ(output, expectedOutput);
+}
+
+TEST(PrintFirstNLinesFromFileTest, FewerLinesInTheFile) {
+
+    std::ofstream outfile("testfile1.txt");
+    outfile << "Line 1\nLine 2\n";
+    outfile.close();
+
+    std::string output = captureOutput("testfile1.txt", 5);
+    std::string expectedOutput = "Line 1\nLine 2\n";
+    EXPECT_EQ(output, expectedOutput);
+}
+
+TEST(PrintFirstNLinesFromFileTest, EmptyFile) {
+    std::ofstream outfile("testfile2.txt");
+    outfile.close();
+
+    std::string output = captureOutput("testfile2.txt", 3);
+    std::string expectedOutput = "";
+    EXPECT_EQ(output, expectedOutput);
+}
+
+TEST(PrintFirstNLinesFromFileTest, NonExistentFile) {
+    testing::internal::CaptureStderr(); 
+    PrintFirstNLinesFromFile("", 3);
+    std::string errorOutput = testing::internal::GetCapturedStderr();
+
+    std::string expectedError = "Error: cannot open file!\n";
+    EXPECT_EQ(errorOutput, expectedError);
+}
+
+//Функция для умножения матриц
+void multiplyMatrices(int A[][100], int B[][100], int result[][100], int rowsA, int columnsA, int columnsB, int rowsB) {
+   
+    if (columnsA != rowsB)
+    {
+        cout << "Error! Columns of matrix A != rows of matrix B!";
+        return;
+    }
+
+    for (int i = 0; i < rowsA; ++i) {
+        for (int j = 0; j < columnsB; ++j) {
+            result[i][j] = 0;
+        }
+    }
+
+    for (int i = 0; i < rowsA; ++i) {
+        for (int j = 0; j < columnsB; ++j) {
+            for (int k = 0; k < columnsA; ++k) {
+                result[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+}
+
+string captureOutput(int A[][100], int B[][100], int result[][100], //функция для захвата вывода в консоль
+    int rowsA, int columnsA, int columnsB, int rowsB) {
+    testing::internal::CaptureStdout();
+    multiplyMatrices(A, B, result, rowsA, columnsA, columnsB, rowsB);
+    return testing::internal::GetCapturedStdout();
+}
+
+// Тесты
+TEST(MultiplyMatricesTest, SquareMatrices) { //квадратные матрицы
+    int A[100][100] = { {1, 2}, {3, 4} };
+    int B[100][100] = { {5, 6}, {7, 8} };
+    int result[100][100];
+
+    multiplyMatrices(A, B, result, 2, 2, 2, 2);
+
+    int expected[100][100] = { {19, 22}, {43, 50} };
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            EXPECT_EQ(result[i][j], expected[i][j])
+                << "Error in element [" << i << "][" << j << "]";
+        }
+    }
+}
+
+TEST(MultiplyMatricesTest, OrdinaryMatrices) {  //матрицы с подходящими условиями
+    int A[100][100] = { {1, 2, 3}, {4, 5, 6} };
+    int B[100][100] = { {7, 8}, {9, 10}, {11, 12} };
+    int result[100][100];
+
+    multiplyMatrices(A, B, result, 2, 3, 2, 3);
+
+    int expected[100][100] = { {58, 64}, {139, 154} };
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            EXPECT_EQ(result[i][j], expected[i][j]);
+        }
+    }
+}
+
+TEST(MultiplyMatricesTest, IdentityMatrix) {
+    int A[100][100] = { {1, 2, 3}, {4, 5, 6} };
+    int B[100][100] = { {1, 0, 0}, {0, 1, 0}, {0, 0, 1} };
+    int result[100][100] = { {999} }; //заполняется чем-то, чтобы проверить, все ли значения изменились
+
+    multiplyMatrices(A, B, result, 2, 3, 3, 3);
+
+    int expected[100][100] = { {1, 2, 3}, {4, 5, 6} };
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            EXPECT_EQ(result[i][j], expected[i][j]);
+        }
+    }
+}
+
+TEST(MultiplyMatricesTest, CannotMultipleMatrix) {
+    int A[100][100] = { {1, 2} };       //матрицы нельзя перемножить, потому что количество столбцов А не равно количеству строк В
+    int B[100][100] = { {5, 6, 7} };    
+    int result[100][100] = { {999} };   //заполняется чем-то, чтобы проверить, все ли значения изменились
+
+    // columnsA = 2, rowsB = 1 → ошибка
+    string output = captureOutput(A, B, result, 1, 2, 3, 1);
+
+    // Проверяем сообщение об ошибке
+    EXPECT_EQ(output, "Error! Columns of matrix A != rows of matrix B!");
+
+    // Проверяем, что результат не изменился
+    EXPECT_EQ(result[0][0], 999) << "Matrix result was chanded!";
+}
+
+TEST(MultiplyMatricesTest, ZeroMatrix) {
+    int A[100][100] = { {1, 2}, {3, 4} };
+    int B[100][100] = { {0, 0}, {0, 0} };
+    int result[100][100];
+
+    multiplyMatrices(A, B, result, 2, 2, 2, 2);
+
+    int expected[100][100] = { {0, 0}, {0, 0} };
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            EXPECT_EQ(result[i][j], expected[i][j]);
+        }
+    }
+}
+
+
+int main(int argc, char** argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+
